@@ -36,6 +36,10 @@ scripts/gee/09_Transition_Analysis.js             -> transition matrices, net/an
 scripts/gee/10_data_quality_check.js              -> per-epoch scene/cloud/valid-pixel diagnostic (independent)
 scripts/gee/11_Spectral_Separability_Diagnostic.js -> M-statistic per epoch (needs Script 05's 6 classified-map assets)
 notebooks/publication_figures.ipynb               -> all publication figures (needs Script 05's Drive exports)
+
+scripts/gee/12_repeated_spatial_block_cv.js        -> repeated 5-fold spatial-block CV predictions (independent of the above; ICCIT 2026 revision)
+scripts/python/13_spatial_cv_mcnemar.py            -> CV accuracy summary + McNemar tests (needs Script 12's CSV, committed at data/Script12_SpatialCV_Predictions.csv)
+scripts/python/14_collapsed_class_accuracy.py      -> 3-/4-class area-adjusted accuracy (needs 06b + 07 CSVs, same as olofsson_accuracy.py)
 ```
 
 `scripts/gee/01_data_exploration.js`, `01_study_area_exploration.js`, and
@@ -58,10 +62,13 @@ pandas
 numpy
 ```
 
-No `requirements.txt` is pinned to specific versions; `olofsson_accuracy.py`
-uses only basic `pandas`/`numpy` operations (crosstab, arithmetic), so any
-reasonably recent version of both should work. `publication_figures.ipynb`
-is run in Google Colab, which provides its own pinned environment.
+No `requirements.txt` is pinned to specific versions; `olofsson_accuracy.py`,
+`13_spatial_cv_mcnemar.py`, and `14_collapsed_class_accuracy.py` use only
+basic `pandas`/`numpy` operations (crosstab, arithmetic, percentiles), so
+any reasonably recent version of both should work. `13_spatial_cv_mcnemar.py`
+also uses the Python standard library (`math.comb`, `math.erfc`) for the
+McNemar test — no `scipy` dependency. `publication_figures.ipynb` is run in
+Google Colab, which provides its own pinned environment.
 
 ## 4. Expected inputs / outputs per stage
 
@@ -77,6 +84,9 @@ is run in Google Colab, which provides its own pinned environment.
 | Script 09 | same as 04 | console (transition matrices, ha + ha/yr) |
 | Script 10 | Landsat collections only | console (scene count, cloud %, valid-pixel %) |
 | Script 11 | 6x `RF_Classified_<year>` assets (from 05) | Drive CSV: M-statistic per epoch (`data/DenseForest_Degraded_Separability_AllEpochs.csv`) |
+| Script 12 | same as 04 | Drive CSV: per-sample predictions, 3,964 rows (`data/Script12_SpatialCV_Predictions.csv`) |
+| `13_spatial_cv_mcnemar.py` | `data/Script12_SpatialCV_Predictions.csv` | console: holdout sanity check, CV summary, McNemar tests + `spatial_cv_summary.csv`, `mcnemar_results.csv` |
+| `14_collapsed_class_accuracy.py` | `RF_MappedArea_PerClass_2023.csv`, `ValidationPoints_200_Reclassified_v2.csv` (same, not committed, as `olofsson_accuracy.py`) | console: 5-/3-/4-class area-adjusted OA, UA/PA, CIs + `collapsed_class_accuracy.csv` |
 
 ## 5. Validated vs. unadjusted results — read before citing a number
 
@@ -99,6 +109,12 @@ is run in Google Colab, which provides its own pinned environment.
 - **Dense Forest / Degraded Forest/Jhum are operational NDVI-threshold
   classes**, not field measurements of canopy condition (see Script 04's
   header for the exact class definitions).
+- **Repeated spatial-block CV (Scripts 12-13)** gives RF 78.61 +/- 0.63%,
+  SVM 78.69 +/- 0.76%, CART 71.89 +/- 1.30% (mean +/- SD over 5 seeds x
+  5 folds); McNemar's test finds RF vs SVM not significant on the holdout
+  or any CV repetition (p in 0.42-1.00), while CART is significantly worse
+  than both RF and SVM on every CV repetition (p <= 0.003) though not on
+  the single original holdout (too few disagreements there for power).
 - **Script 11's M-statistic diagnostic is supplementary, not a formal
   accuracy assessment** — it deliberately reuses Script 02's (exploratory)
   compositing routine rather than the Script 04/05 production pipeline;

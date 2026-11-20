@@ -202,7 +202,8 @@ source code here.
 scripts/gee/         Google Earth Engine JavaScript scripts (run in the
                       GEE Code Editor, in numeric order — see
                       docs/REPRODUCIBILITY.md for the exact sequence)
-scripts/python/       Olofsson area-adjusted accuracy computation
+scripts/python/       Olofsson area-adjusted accuracy, repeated spatial-CV
+                      significance testing, and collapsed-class accuracy
 notebooks/            Exploratory analysis and figure generation
 data/                 Validation point sets (CSV / GeoJSON / KML) and the
                       Script 11 spectral-separability diagnostic output
@@ -233,12 +234,27 @@ for the exact execution order and required assets.
 | `09_Transition_Analysis.js` | **production** | Land-cover transition matrices between epochs and cumulative 1993-2023 |
 | `10_data_quality_check.js` | **production** | Per-epoch Landsat scene count / cloud cover / valid-pixel diagnostic |
 | `11_Spectral_Separability_Diagnostic.js` | **production** (supplementary) | Dense Forest vs Degraded/Jhum NDVI class-separability (M-statistic) per epoch |
+| `12_repeated_spatial_block_cv.js` | **production** | Repeated 5-fold spatial-block CV (5 seeds) for RF/SVM/CART; exports per-sample predictions for Scripts 13/14 (ICCIT 2026 revision) |
 
 ### Python analysis
 
 `scripts/python/olofsson_accuracy.py` computes area-adjusted accuracy
 estimates and confidence intervals (Olofsson et al., 2014) from the
 confusion matrix and class-area totals exported by the GEE scripts.
+
+`scripts/python/13_spatial_cv_mcnemar.py` (Script 13) summarises Script
+12's per-sample predictions: overall accuracy/kappa per classifier on the
+original holdout (sanity check against Script 04) and on the repeated
+5-fold spatial-block CV, plus McNemar's paired significance test between
+every classifier pair, on the holdout and on every CV repetition.
+
+`scripts/python/14_collapsed_class_accuracy.py` (Script 14) re-expresses
+the 2023 area-adjusted accuracy assessment at coarser class groupings
+(3-class and 4-class, collapsing Agriculture/Settlement and Bare Land into
+"Other"), reusing the same reference points, strata, and mapped-area
+weights as `olofsson_accuracy.py`. Added for the ICCIT 2026 camera-ready
+revision (reviewer comments on spatial cross-validation, McNemar
+significance testing, and collapsed-class accuracy).
 
 ### Notebook
 
